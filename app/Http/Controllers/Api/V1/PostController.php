@@ -15,7 +15,7 @@ class PostController extends Controller
      */
     public function index()
     {
-        return PostResource::collection(Post::all());
+        return PostResource::collection(Post::with('author')->get());
     }
 
     /**
@@ -26,7 +26,7 @@ class PostController extends Controller
         $data = $request->validated();
         $data['author_id'] = 1; // Assuming you have authentication set up
         $post = Post::create($data);
-        return response()->json(['message' => 'Post created successfully', 'post' => $post], 201);
+        return response()->json(['message' => 'Post created successfully', 'post' => new PostResource($post)], 201);
     }
 
     /**
@@ -34,11 +34,12 @@ class PostController extends Controller
      */
     public function show(string $id)
     {
-        $post = Post::find($id);
-        if (!$post) {
-            return response()->json(['message' => 'Post not found'], 404);
-        }
-        return $post;
+        // $post = Post::find($id);
+        // if (!$post) {
+        //     return response()->json(['message' => 'Post not found'], 404);
+        // }
+        // return $post;
+        return new PostResource(Post::findOrFail($id));
     }
 
     /**
@@ -55,7 +56,7 @@ class PostController extends Controller
             return response()->json(['message' => 'Post not found'], 404);
         }
         $post->update($data);
-        return response()->json(['message' => 'Post updated successfully', 'post' => $post]);
+        return response()->json(['message' => 'Post updated successfully', 'post' => new PostResource($post)]);
     }
 
     /**
