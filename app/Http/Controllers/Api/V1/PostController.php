@@ -7,6 +7,7 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class PostController extends Controller
 {
@@ -15,7 +16,9 @@ class PostController extends Controller
      */
     public function index()
     {
-        return PostResource::collection(Post::with('author')->get());
+        $posts = Post::with('author')->get();
+
+        return PostResource::collection($posts);
     }
 
     /**
@@ -24,51 +27,48 @@ class PostController extends Controller
     public function store(StorePostRequest $request)
     {
         $data = $request->validated();
-        $data['author_id'] = 1; // Assuming you have authentication set up
+        $data['author_id'] = $request->user()->id; // Assuming you have authentication set up
         $post = Post::create($data);
+
         return response()->json(['message' => 'Post created successfully', 'post' => new PostResource($post)], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Post $post)
     {
-        // $post = Post::find($id);
-        // if (!$post) {
-        //     return response()->json(['message' => 'Post not found'], 404);
-        // }
-        // return $post;
-        return new PostResource(Post::findOrFail($id));
+        abort_if(FacadesAuth::id() != $post->author_id, 403, 'Unauthorized');
+        return new PostResource($post);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Post $post)
     {
+        abort_if(FacadesAuth::id() != $post->author_id, 403, 'Unauthorized');
         $data = $request->validate([
             'title' => 'sometimes|required|string',
-            'body' => 'sometimes|required|string'
+            'body' => 'sometimes|required|string',
         ]);
         $post = Post::find($id);
-        if (!$post) {
+        if (! $post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
         $post->update($data);
+
         return response()->json(['message' => 'Post updated successfully', 'post' => new PostResource($post)]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Post $post)
     {
-        $post = Post::find($id);
-        if (!$post) {
-            return response()->json(['message' => 'Post not found'], 404);
-        }
+        abort_if(FacadesAuth::id() != $post->author_id, 403, 'Unauthorized');
         $post->delete();
-        return response()->json(['message' => 'Post deleted successfully']);
+
+        return response()->noContent();
     }
 }
