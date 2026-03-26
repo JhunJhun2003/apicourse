@@ -52,7 +52,6 @@ class PostController extends Controller
             'title' => 'sometimes|required|string',
             'body' => 'sometimes|required|string',
         ]);
-        $post = Post::find($id);
         if (! $post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
